@@ -3,13 +3,18 @@ package ru.spbstu.icc.kspt.lab2.continuewatch
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import ru.spbstu.icc.kspt.lab2.continuewatch.databinding.ActivityMainBinding
 
 class MainActivityCoroutine : AppCompatActivity() {
     var secondsElapsedBeforeStop = 0
-    var secondsElapsedAfterStop = 0
+    var secondsElapsed = 0
     private lateinit var binding: ActivityMainBinding
-    private lateinit var viewModel: MainViewModel
 
     companion object {
         const val STATE_SECONDS = "secondsElapsed"
@@ -20,31 +25,25 @@ class MainActivityCoroutine : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = MainViewModel()
-        viewModel.secondsElapsed.observe(this) { value ->
-            secondsElapsedAfterStop = value
-            binding.textSecondsElapsed.text = "Seconds elapsed ${secondsElapsedBeforeStop + secondsElapsedAfterStop}"
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    delay(1000)
+                    binding.textSecondsElapsed.text = getString(R.string.textSeconds, ++secondsElapsed)
+                }
+            }
         }
-    }
-
-    override fun onStart() {
-        viewModel.startTimer()
-        super.onStart()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         with(savedInstanceState) { secondsElapsedBeforeStop = getInt(STATE_SECONDS) }
-        binding.textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsedBeforeStop)
+        secondsElapsed = secondsElapsedBeforeStop
+        binding.textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed)
         super.onRestoreInstanceState(savedInstanceState)
     }
 
-    override fun onStop() {
-        viewModel.stopTimer()
-        super.onStop()
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
-        secondsElapsedBeforeStop += secondsElapsedAfterStop
+        secondsElapsedBeforeStop = secondsElapsed
         outState.run {
             putInt(STATE_SECONDS, secondsElapsedBeforeStop)
         }
