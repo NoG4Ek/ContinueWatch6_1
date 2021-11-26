@@ -5,15 +5,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivityThread : AppCompatActivity() {
-    var secondsElapsed: Int = 0
-    var secondsElapsedBeforeStop = 0
+    private var secondsElapsed: Int = 0
     private lateinit var textSecondsElapsed: TextView
     private lateinit var backgroundThread: Thread
-
-    companion object {
-        const val STATE_SECONDS = "secondsElapsed"
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,15 +17,15 @@ class MainActivityThread : AppCompatActivity() {
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        with(savedInstanceState) { secondsElapsedBeforeStop = getInt(STATE_SECONDS) }
-        secondsElapsed = secondsElapsedBeforeStop
+        savedInstanceState.run {
+            secondsElapsed = getInt(SECONDS)
+        }
         textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed)
         super.onRestoreInstanceState(savedInstanceState)
     }
 
     override fun onStart() {
-        initBackgroundThread()
-        backgroundThread.start()
+        startCounterThread()
         super.onStart()
     }
 
@@ -41,14 +35,13 @@ class MainActivityThread : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        secondsElapsedBeforeStop = secondsElapsed
         outState.run {
-            putInt(STATE_SECONDS, secondsElapsedBeforeStop)
+            putInt(SECONDS, secondsElapsed)
         }
         super.onSaveInstanceState(outState)
     }
 
-    private fun initBackgroundThread() {
+    private fun startCounterThread() {
         backgroundThread = Thread {
             while (!Thread.currentThread().isInterrupted) {
                 try {
@@ -56,10 +49,14 @@ class MainActivityThread : AppCompatActivity() {
                     textSecondsElapsed.post {
                         textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed++)
                     }
-                } catch (e: InterruptedException) {
+                }catch (e: InterruptedException) {
                     Thread.currentThread().interrupt()
                 }
             }
         }
+        backgroundThread.name = "debugThread"
+        backgroundThread.start()
     }
+
+    companion object { const val SECONDS = "Seconds" }
 }

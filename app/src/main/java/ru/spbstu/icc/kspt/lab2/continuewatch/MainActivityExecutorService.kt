@@ -3,19 +3,17 @@ package ru.spbstu.icc.kspt.lab2.continuewatch
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadFactory
 
 class MainActivityExecutorService : AppCompatActivity() {
-    var secondsElapsed: Int = 0
-    var secondsElapsedBeforeStop = 0
+    var secondsElapsed = 0
     private lateinit var textSecondsElapsed: TextView
-    private lateinit var executor: ExecutorService
+    private var executorService: ExecutorService = Executors.newFixedThreadPool(1)
+    private lateinit var viewModel: MainViewModel
 
-    companion object {
-        const val STATE_SECONDS = "secondsElapsed"
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,39 +23,34 @@ class MainActivityExecutorService : AppCompatActivity() {
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        with(savedInstanceState) { secondsElapsedBeforeStop = getInt(STATE_SECONDS) }
-        secondsElapsed = secondsElapsedBeforeStop
-        textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed)
+        savedInstanceState.run {
+            secondsElapsed = getInt(SECONDS)
+        }
+        //textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed)
         super.onRestoreInstanceState(savedInstanceState)
     }
 
     override fun onStart() {
-        initBackgroundThread()
+        executeCounterThread()
         super.onStart()
     }
 
     override fun onStop() {
-        executor.shutdown()
+        secondsElapsed = viewModel.cancelThreadCounter()
         super.onStop()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        secondsElapsedBeforeStop = secondsElapsed
         outState.run {
-            putInt(STATE_SECONDS, secondsElapsedBeforeStop)
+            putInt(SECONDS, secondsElapsed)
         }
         super.onSaveInstanceState(outState)
     }
 
-    private fun initBackgroundThread() {
-        executor = Executors.newFixedThreadPool(1)
-        executor.execute {
-            while(!executor.isShutdown) {
-                Thread.sleep(1000)
-                textSecondsElapsed.post {
-                    textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed++)
-                }
-            }
-        }
+    private fun executeCounterThread() {
+        viewModel = MainViewModel(executorService, WeakReference(textSecondsElapsed), secondsElapsed)
+        viewModel.executeThreadCounter(applicationContext)
     }
+
+    companion object { const val SECONDS = "Seconds" }
 }
