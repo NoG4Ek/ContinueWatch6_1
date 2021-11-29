@@ -20,23 +20,34 @@ class MainActivityExecutorService : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         textSecondsElapsed = findViewById(R.id.textSecondsElapsed)
+
+        viewModel = MainViewModel(executorService, secondsElapsed)
+
+        viewModel.mLDSecs.observe(this) {
+            if (it != null) {
+                runOnUiThread {
+                    secondsElapsed = it
+                    textSecondsElapsed.text = getString(R.string.textSeconds, it)
+                }
+            }
+        }
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         savedInstanceState.run {
             secondsElapsed = getInt(SECONDS)
         }
-        //textSecondsElapsed.text = getString(R.string.textSeconds, secondsElapsed)
+
         super.onRestoreInstanceState(savedInstanceState)
     }
 
     override fun onStart() {
-        executeCounterThread()
+        viewModel.executeThreadCounter()
         super.onStart()
     }
 
     override fun onStop() {
-        secondsElapsed = viewModel.cancelThreadCounter()
+        viewModel.cancelThreadCounter()
         super.onStop()
     }
 
@@ -45,11 +56,6 @@ class MainActivityExecutorService : AppCompatActivity() {
             putInt(SECONDS, secondsElapsed)
         }
         super.onSaveInstanceState(outState)
-    }
-
-    private fun executeCounterThread() {
-        viewModel = MainViewModel(executorService, WeakReference(textSecondsElapsed), secondsElapsed)
-        viewModel.executeThreadCounter(applicationContext)
     }
 
     companion object { const val SECONDS = "Seconds" }

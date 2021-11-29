@@ -1,38 +1,32 @@
 package ru.spbstu.icc.kspt.lab2.continuewatch
 
-import android.content.Context
-import android.widget.TextView
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
-import javax.inject.Inject
 import java.util.concurrent.Future
 
-@HiltViewModel
-class MainViewModel @Inject constructor(
+
+class MainViewModel constructor(
     private val executor: ExecutorService,
-    private val textSecondsElapsed: WeakReference<TextView>,
     secondsElapsed: Int
 ) : ViewModel() {
+    val mLDSecs = MutableLiveData<Int>()
     private var secs = secondsElapsed
     private lateinit var future: Future<*>
 
-    fun executeThreadCounter(@ApplicationContext context: Context) {
+    fun executeThreadCounter() {
+        mLDSecs.postValue(secs)
         future = executor.submit {
             while(!future.isCancelled) {
                 Thread.sleep(1000)
-                textSecondsElapsed.get()?.post {
-                    textSecondsElapsed.get()?.text = context.applicationContext.getString(R.string.textSeconds, secs++)
-                }
+                secs++
+                mLDSecs.postValue(secs)
             }
         }
         Thread.currentThread().name = "debugThread"
     }
 
-    fun cancelThreadCounter(): Int {
+    fun cancelThreadCounter() {
         future.cancel(true)
-        return secs
     }
 }
