@@ -3,16 +3,12 @@ package ru.spbstu.icc.kspt.lab2.continuewatch
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import java.lang.ref.WeakReference
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
+import androidx.activity.viewModels
 
 class MainActivityExecutorService : AppCompatActivity() {
     var secondsElapsed = 0
     private lateinit var textSecondsElapsed: TextView
-    private var executorService: ExecutorService = Executors.newFixedThreadPool(1)
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,8 +16,6 @@ class MainActivityExecutorService : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         textSecondsElapsed = findViewById(R.id.textSecondsElapsed)
-
-        viewModel = MainViewModel(executorService, secondsElapsed)
 
         viewModel.mLDSecs.observe(this) {
             if (it != null) {
@@ -37,7 +31,7 @@ class MainActivityExecutorService : AppCompatActivity() {
         savedInstanceState.run {
             secondsElapsed = getInt(SECONDS)
         }
-
+        viewModel.secs = secondsElapsed
         super.onRestoreInstanceState(savedInstanceState)
     }
 

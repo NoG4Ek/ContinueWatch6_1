@@ -1,17 +1,17 @@
 package ru.spbstu.icc.kspt.lab2.continuewatch
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
 
-class MainViewModel constructor(
-    private val executor: ExecutorService,
-    secondsElapsed: Int
-) : ViewModel() {
+class MainViewModel(application: Application): AndroidViewModel(application) {
+    private val executor: ExecutorService = getApplication<App>().executorService
     val mLDSecs = MutableLiveData<Int>()
-    private var secs = secondsElapsed
+    var secs = 0
     private lateinit var future: Future<*>
 
     fun executeThreadCounter() {
